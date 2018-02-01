@@ -1,0 +1,80 @@
+public static class KmeansMapper extends Mapper<LongWritable, Text, IntWritable, Text>{
+      		//variable decleration for holding centroid
+      		//this decleration need to be changes according to the number of centroid being used
+      		//right now 2 centroid is being used, if we wish to use 5 centroid, then change value from 2 to 5
+      		int centroidCntr = 2;
+      		double[][] centroid = new double[centroidCntr][centroidCntr];
+
+      		@Override
+      		public void setup(Context context){
+	  		Path[] uris = null;
+	  		try{
+	      			//setup for reading cache file in this case, centroid file
+	      			//this setup is for context, means for hdfs context
+	      			uris = DistributedCache.getLocalCacheFiles(context.getConfiguration());
+	  		}
+	  		catch(IOException ex){
+	      			System.out.println(ex);
+	  		}
+	  		BufferedReader br = null;//opening stream reader to read centroid file
+	  		try{
+	      			br = new BufferedReader(new FileReader(uris[0].toString()));
+	  		}
+	  		catch(FileNotFoundException ex){
+	      			System.out.println(ex);
+	 		}
+	  		//reading centroid file
+	  		try{
+	      			String currLine = null;
+	      			int Cntr=0;
+	      			while((currLine = br.readLine())!=null){
+		  			String[] centStr = currLine.split("\t");
+		  			if(Cntr<centroidCntr){
+		      				//storing x and y for centriod in the cache for being used in Mapper
+		      				centroid[Cntr][0] = Double.parseDouble(centStr[1]);
+		      				centroid[Cntr][1]= Double.parseDouble(centStr[2]);
+		      				Cntr++;
+		  			}
+	      			}
+	  		}
+	  		catch(IOException ex){
+	      			System.out.println(ex);
+	  		}
+      		}
+
+      		public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException {
+
+	  		// Read number of centroids and current centroids from file
+	  		// calculate distance of given point to each Centroid
+	  		// winnerCentroid = centroid with minimarl distance for this point
+	  		double distance=0.0;
+	  		double minDistance=999999999.99999999;
+	  		int winnercentroid=-1;
+	  		int i=0;
+	  		//double[][] C= new double[2][2];
+	  		//float[][] C2= new float[2][2];
+
+	  		/*C[0][0] = 3.0;
+	  		C[0][1] = 7.0;
+	  		C[1][0] = 9.0;
+	  		C[1][1] = 4.0;*/
+	  
+	  		String line = value.toString();
+	  		String[] currStr = line.split("\t");
+
+	  		double x = Double.parseDouble(currStr[0]);
+	  		double y = Double.parseDouble(currStr[1]);
+
+	  		for(i=0;i<centroidCntr;i++){
+	      			distance = (x - centroid[i][0]) * (x - centroid[i][0]) + (y - centroid[i][1]) * (y - centroid[i][1]);
+	      			if(distance<minDistance){
+		  			minDistance = distance;
+		  			winnercentroid = i;
+	      			}
+	  		}
+	  		String line1=line+ "\t" + minDistance;
+			Text val=new Text(line1);
+	  		IntWritable winnerCentroid = new IntWritable(winnercentroid);
+	  		context.write(winnerCentroid, val);
+      		}
+  	}
