@@ -1,0 +1,30 @@
+public static class KmeansReducer extends Reducer<IntWritable,Text,IntWritable,Text> {
+
+      		public void reduce(IntWritable clusterid, Iterable<Text> points,Context context) throws IOException, 															
+InterruptedException {
+
+	  		int num = 0;
+	  		double centerx=0.0;
+	  		double centery=0.0;
+			double SSE=0.0;
+	  		for (Text point : points) {
+	      			num++;
+	      			String line = point.toString();
+	      			String[] currStr = line.split("\t");
+	      
+	      			double x = Double.parseDouble(currStr[0]);
+	      			double y = Double.parseDouble(currStr[1]);
+				double z = Double.parseDouble(currStr[2]);
+	      			centerx += x;
+	      			centery += y;
+				SSE +=z;
+	  		}
+	  		centerx = centerx/num;
+	  		centery = centery/num;
+	  
+	  		String preres = ""+centerx+"\t"+centery + "\t number of points in this cluster\t" + num+ "\t SSE \t" + SSE;
+	  		Text result = new Text(preres);
+	  		context.write(clusterid, result);
+      		}
+  	}
+
